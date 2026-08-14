@@ -1,0 +1,47 @@
+<section class="hero">
+  <p class="eyebrow">Box office</p>
+  <h1 class="hero__title">What's on stage</h1>
+  <p class="hero__lede">
+    Pick a night, choose your seats on the plan, pay in a minute.
+  </p>
+</section>
+
+
+
+@if (events$ | async; as events) {
+  @if (events === null) {
+<p class="notice">
+  The programme could not be loaded. Check that the API is running, then reload the page.
+</p>
+  } @else if (events.length === 0) {
+<p class="notice">No performance is scheduled yet. Come back soon.</p>
+  } @else {
+<ul class="stubs">
+  @for (event of events; track event.id) {
+  <li>
+    <a class="stub" [routerLink]="['/events', event.id]">
+      <div class="stub__date">
+        <span class="stub__day">{{ event.startsAt | date: 'dd' }}</span>
+        <span class="stub__month">{{ event.startsAt | date: 'MMM' }}</span>
+        <span class="stub__year">{{ event.startsAt | date: 'yyyy' }}</span>
+      </div>
+
+      <div class="stub__perf" aria-hidden="true"></div>
+
+      <div class="stub__body">
+        <h2 class="stub__title">{{ event.name }}</h2>
+        <p class="stub__venue">
+          {{ event.venueName }}@if (event.venueCity) { <span class="stub__city">, {{ event.venueCity }}</span> }
+        </p>
+        <p class="stub__time">{{ event.startsAt | date: 'EEEE, HH:mm' }}</p>
+      </div>
+
+      <span class="stub__go" aria-hidden="true">→</span>
+    </a>
+  </li>
+  }
+</ul>
+  }
+} @else {
+<p class="notice">Loading the programme…</p>
+}

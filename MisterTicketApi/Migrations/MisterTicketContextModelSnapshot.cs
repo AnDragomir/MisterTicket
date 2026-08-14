@@ -30,25 +30,66 @@ namespace MisterTicketApi.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("DateTime")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("OrganizerId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartsAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("VenueId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("OrganizerId");
+
+                    b.HasIndex("VenueId");
+
                     b.ToTable("Events");
+                });
+
+            modelBuilder.Entity("MisterTicketApi.Entities.EventSeat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("EventId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<int?>("ReservationId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SeatId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReservationId");
+
+                    b.HasIndex("SeatId");
+
+                    b.HasIndex("EventId", "SeatId")
+                        .IsUnique();
+
+                    b.ToTable("EventSeats");
                 });
 
             modelBuilder.Entity("MisterTicketApi.Entities.Payment", b =>
@@ -59,21 +100,68 @@ namespace MisterTicketApi.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("Amount")
-                        .HasColumnType("int");
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(10,2)");
 
-                    b.Property<int>("ReferenceId")
-                        .HasColumnType("int");
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
 
-                    b.Property<string>("Status")
+                    b.Property<string>("Method")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Reference")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("ReservationId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ReferenceId");
+                    b.HasIndex("Reference")
+                        .IsUnique();
+
+                    b.HasIndex("ReservationId")
+                        .IsUnique();
 
                     b.ToTable("Payments");
+                });
+
+            modelBuilder.Entity("MisterTicketApi.Entities.PricingZone", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("BasePrice")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("ColorHex")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("nvarchar(7)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("PricingZones");
                 });
 
             modelBuilder.Entity("MisterTicketApi.Entities.Reservation", b =>
@@ -84,16 +172,27 @@ namespace MisterTicketApi.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("Date")
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EventId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(10,2)");
+
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("EventId");
 
                     b.HasIndex("UserId");
 
@@ -108,18 +207,26 @@ namespace MisterTicketApi.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("Price")
+                    b.Property<int>("Number")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ReservationId")
+                    b.Property<int>("PricingZoneId")
                         .HasColumnType("int");
 
-                    b.Property<int>("Status")
+                    b.Property<string>("RowLabel")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<int>("VenueId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ReservationId");
+                    b.HasIndex("PricingZoneId");
+
+                    b.HasIndex("VenueId", "RowLabel", "Number")
+                        .IsUnique();
 
                     b.ToTable("Seats");
                 });
@@ -134,23 +241,31 @@ namespace MisterTicketApi.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(180)
+                        .HasColumnType("nvarchar(180)");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
 
                     b.Property<string>("LastName")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<int>("Role")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });
@@ -166,53 +281,148 @@ namespace MisterTicketApi.Migrations
                     b.Property<int>("Capacity")
                         .HasColumnType("int");
 
+                    b.Property<string>("City")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.HasKey("Id");
 
                     b.ToTable("Venues");
                 });
 
-            modelBuilder.Entity("MisterTicketApi.Entities.Payment", b =>
+            modelBuilder.Entity("MisterTicketApi.Entities.Event", b =>
                 {
-                    b.HasOne("MisterTicketApi.Entities.Reservation", "Reference")
+                    b.HasOne("MisterTicketApi.Entities.User", "Organizer")
                         .WithMany()
-                        .HasForeignKey("ReferenceId")
+                        .HasForeignKey("OrganizerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MisterTicketApi.Entities.Venue", "Venue")
+                        .WithMany("Events")
+                        .HasForeignKey("VenueId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Organizer");
+
+                    b.Navigation("Venue");
+                });
+
+            modelBuilder.Entity("MisterTicketApi.Entities.EventSeat", b =>
+                {
+                    b.HasOne("MisterTicketApi.Entities.Event", "Event")
+                        .WithMany("EventSeats")
+                        .HasForeignKey("EventId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Reference");
+                    b.HasOne("MisterTicketApi.Entities.Reservation", "Reservation")
+                        .WithMany("EventSeats")
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MisterTicketApi.Entities.Seat", "Seat")
+                        .WithMany("EventSeats")
+                        .HasForeignKey("SeatId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("Reservation");
+
+                    b.Navigation("Seat");
+                });
+
+            modelBuilder.Entity("MisterTicketApi.Entities.Payment", b =>
+                {
+                    b.HasOne("MisterTicketApi.Entities.Reservation", "Reservation")
+                        .WithOne("Payment")
+                        .HasForeignKey("MisterTicketApi.Entities.Payment", "ReservationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Reservation");
                 });
 
             modelBuilder.Entity("MisterTicketApi.Entities.Reservation", b =>
                 {
-                    b.HasOne("MisterTicketApi.Entities.User", "User")
-                        .WithMany("ReservationsHistory")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                    b.HasOne("MisterTicketApi.Entities.Event", "Event")
+                        .WithMany("Reservations")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("MisterTicketApi.Entities.User", "User")
+                        .WithMany("Reservations")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Event");
 
                     b.Navigation("User");
                 });
 
             modelBuilder.Entity("MisterTicketApi.Entities.Seat", b =>
                 {
-                    b.HasOne("MisterTicketApi.Entities.Reservation", null)
-                        .WithMany("SelectedSeats")
-                        .HasForeignKey("ReservationId");
+                    b.HasOne("MisterTicketApi.Entities.PricingZone", "PricingZone")
+                        .WithMany("Seats")
+                        .HasForeignKey("PricingZoneId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MisterTicketApi.Entities.Venue", "Venue")
+                        .WithMany("Seats")
+                        .HasForeignKey("VenueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PricingZone");
+
+                    b.Navigation("Venue");
+                });
+
+            modelBuilder.Entity("MisterTicketApi.Entities.Event", b =>
+                {
+                    b.Navigation("EventSeats");
+
+                    b.Navigation("Reservations");
+                });
+
+            modelBuilder.Entity("MisterTicketApi.Entities.PricingZone", b =>
+                {
+                    b.Navigation("Seats");
                 });
 
             modelBuilder.Entity("MisterTicketApi.Entities.Reservation", b =>
                 {
-                    b.Navigation("SelectedSeats");
+                    b.Navigation("EventSeats");
+
+                    b.Navigation("Payment");
+                });
+
+            modelBuilder.Entity("MisterTicketApi.Entities.Seat", b =>
+                {
+                    b.Navigation("EventSeats");
                 });
 
             modelBuilder.Entity("MisterTicketApi.Entities.User", b =>
                 {
-                    b.Navigation("ReservationsHistory");
+                    b.Navigation("Reservations");
+                });
+
+            modelBuilder.Entity("MisterTicketApi.Entities.Venue", b =>
+                {
+                    b.Navigation("Events");
+
+                    b.Navigation("Seats");
                 });
 #pragma warning restore 612, 618
         }

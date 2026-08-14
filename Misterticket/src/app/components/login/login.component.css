@@ -1,0 +1,33 @@
+/* Shared auth layout: register uses the same class names. */
+.auth {
+  max-width: 30rem;
+  padding: clamp(3rem, 8vw, 5rem) 0 6rem;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin: 0 0 1rem;
+}
+
+.auth__title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(2.25rem, 7vw, 3.5rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin: 0 0 2.5rem;
+}
+
+.auth__switch {
+  margin-top: 2rem;
+  font-size: 0.9rem;
+  color: var(--cream-dim);
+}
+
+  .auth__switch a {
+    color: var(--brass);
+  }

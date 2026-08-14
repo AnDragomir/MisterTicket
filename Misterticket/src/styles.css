@@ -1,1 +1,123 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Karla:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Palette: theatre curtain plum, playbill cream, brass fittings */
+  --plum: #1B1218;
+  --plum-raised: #221820;
+  --plum-hover: #291D26;
+  --cream: #F2EAE0;
+  --cream-dim: #C4B3AC;
+  --cream-faint: #8A7A78;
+  --brass: #C9A227;
+  --curtain: #9E3B3B;
+  --rule: #3A2A33;
+  /* Seat statuses */
+  --seat-free: #4CAF6D;
+  --seat-reserved: #E08A2E;
+  --seat-paid: #D2463F;
+  --perf: #55404C;
+  --font-display: 'Bodoni Moda', Georgia, serif;
+  --font-body: 'Karla', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --shell: 62rem;
+  --gutter: clamp(1.25rem, 5vw, 3rem);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--plum);
+  color: var(--cream);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 3px;
+}
+
+/* ---------------- forms (shared by login and register) ---------------- */
+
+.form {
+  display: grid;
+  gap: 1.35rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.field__label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream-faint);
+}
+
+.field__input {
+  padding: 0.8rem 0.9rem;
+  background: var(--plum-raised);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  color: var(--cream);
+  font-family: var(--font-body);
+  font-size: 1rem;
+}
+
+  .field__input:focus {
+    outline: none;
+    border-color: var(--brass);
+  }
+
+.field__error,
+.form__error {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--curtain);
+}
+
+.form__error {
+  margin: 0;
+}
+
+.cta {
+  justify-self: start;
+  margin-top: 0.5rem;
+  padding: 0.9rem 2.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--plum);
+  background: var(--brass);
+  border: 1px solid var(--brass);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+  .cta:hover:not(:disabled),
+  .cta:focus-visible:not(:disabled) {
+    background: transparent;
+    color: var(--brass);
+  }
+
+  .cta:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+@media (prefers-reduced-motion: reduce) {
+  .cta {
+    transition: none;
+  }
+}
+
+

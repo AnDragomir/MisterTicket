@@ -1,0 +1,26 @@
+<header class="masthead">
+  <a class="brand" routerLink="/">
+    <span class="brand__mister">Mister</span><span class="brand__ticket">Ticket</span>
+  </a>
+
+  <nav class="masthead__nav">
+    <a routerLink="/">Programme</a>
+
+    @if (currentUser(); as account) {
+    <a class="account" routerLink="/profile">
+      <span class="account__initials">{{ account.firstName[0] }}{{ account.lastName[0] }}</span>
+      <span class="account__name">{{ account.firstName }}</span>
+    </a>
+    } @else {
+    <a class="signin" routerLink="/login">Sign in</a>
+    }
+  </nav>
+</header>
+
+<main class="shell">
+  <router-outlet />
+</main>
+
+<footer class="footer">
+  <p>MisterTicket · school project</p>
+</footer>

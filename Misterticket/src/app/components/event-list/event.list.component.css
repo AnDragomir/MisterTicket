@@ -1,0 +1,189 @@
+.hero {
+  padding: clamp(3rem, 9vw, 6rem) 0 clamp(2rem, 5vw, 3.5rem);
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: clamp(2rem, 5vw, 3.5rem);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin: 0 0 1.25rem;
+}
+
+.hero__title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(2.75rem, 9vw, 5.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.hero__lede {
+  max-width: 34ch;
+  margin: 1.5rem 0 0;
+  color: var(--cream-dim);
+  font-size: 1.05rem;
+}
+
+.notice {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--cream-dim);
+  padding: 2rem 0;
+}
+
+.stubs {
+  list-style: none;
+  margin: 0 0 5rem;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+/* --- the ticket stub --- */
+.stub {
+  display: grid;
+  grid-template-columns: 5.5rem 1px 1fr auto;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.35rem 1.5rem;
+  text-decoration: none;
+  color: inherit;
+  background: var(--plum-raised);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
+}
+
+  .stub:hover,
+  .stub:focus-visible {
+    background: var(--plum-hover);
+    border-color: var(--brass);
+    transform: translateX(4px);
+  }
+
+.stub__date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-mono);
+  line-height: 1.1;
+}
+
+.stub__day {
+  font-size: 1.9rem;
+  color: var(--brass);
+}
+
+.stub__month {
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-top: 0.3rem;
+}
+
+.stub__year {
+  font-size: 0.7rem;
+  color: var(--cream-faint);
+  margin-top: 0.15rem;
+}
+
+/* Perforation: a dashed line with a punched notch at each end. */
+.stub__perf {
+  position: relative;
+  align-self: stretch;
+  border-left: 1px dashed var(--perf);
+}
+
+  .stub__perf::before,
+  .stub__perf::after {
+    content: '';
+    position: absolute;
+    left: -6px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--plum);
+    border: 1px solid var(--rule);
+  }
+
+  .stub__perf::before {
+    top: -1.85rem;
+  }
+
+  .stub__perf::after {
+    bottom: -1.85rem;
+  }
+
+.stub__title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.6rem;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.stub__venue {
+  margin: 0.45rem 0 0;
+  font-size: 0.95rem;
+  color: var(--cream-dim);
+}
+
+.stub__city {
+  color: var(--cream-faint);
+}
+
+.stub__time {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cream-faint);
+}
+
+.stub__go {
+  font-size: 1.3rem;
+  color: var(--brass);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.stub:hover .stub__go,
+.stub:focus-visible .stub__go {
+  opacity: 1;
+}
+
+@media (max-width: 34rem) {
+  .stub {
+    grid-template-columns: 3.5rem 1px 1fr;
+    gap: 1rem;
+    padding: 1.1rem 1.15rem;
+  }
+
+  .stub__day {
+    font-size: 1.5rem;
+  }
+
+  .stub__title {
+    font-size: 1.3rem;
+  }
+
+  .stub__go {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stub {
+    transition: none;
+  }
+
+    .stub:hover, .stub:focus-visible {
+      transform: none;
+    }
+}

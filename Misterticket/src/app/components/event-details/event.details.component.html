@@ -1,0 +1,51 @@
+@let event = event$ | async;
+
+@if (event === undefined) {
+<p class="notice">Loading the performance…</p>
+} @else if (event === null) {
+<p class="notice">
+  This performance could not be loaded. It may no longer be on the programme.
+</p>
+} @else {
+<a class="back" routerLink="/">← All performances</a>
+
+  @if (holdExpired()) {
+<p class="expired">Your seats were released because the 15 minutes ran out. Pick them again below.</p>
+  }
+
+<article class="playbill">
+  <header class="playbill__head">
+    <p class="eyebrow">{{ event.startsAt | date: 'EEEE d MMMM yyyy' }}</p>
+    <h1 class="playbill__title">{{ event.name }}</h1>
+    <p class="playbill__venue">
+      {{ event.venueName }}@if (event.venueCity) {, {{ event.venueCity }}}
+      · {{ event.startsAt | date: 'HH:mm' }}
+    </p>
+  </header>
+
+  @if (event.description) {
+  <p class="playbill__text">{{ event.description }}</p>
+  }
+
+  <dl class="facts">
+    <div class="fact">
+      <dt>Seats available</dt>
+      <dd>{{ event.freeSeats }} <span class="fact__of">of {{ event.totalSeats }}</span></dd>
+    </div>
+    <div class="fact">
+      <dt>Presented by</dt>
+      <dd>{{ event.organizerName }}</dd>
+    </div>
+    <div class="fact">
+      <dt>Doors</dt>
+      <dd>{{ event.startsAt | date: 'HH:mm' }}</dd>
+    </div>
+  </dl>
+
+  @if (event.freeSeats > 0) {
+  <button class="cta" type="button" (click)="onBuyTickets(event.id)">Buy tickets</button>
+  } @else {
+  <p class="soldout">Sold out</p>
+  }
+</article>
+}

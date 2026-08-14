@@ -1,81 +1,128 @@
-﻿using MisterTicketApi.Database;
+﻿using Microsoft.EntityFrameworkCore;
+using MisterTicketApi.Database;
+using MisterTicketApi.DTOs;
 using MisterTicketApi.Entities;
-using MisterTicketApi.Services.ServicesInterfaces;
 
-namespace MisterTicketApi.Services
+namespace MisterTicketApi.Services;
+
+public class EventService : IEventService
 {
-    public class EventService : IEventService
+    private readonly MisterTicketContext _context;
+
+    public EventService(MisterTicketContext context)
     {
-        private readonly MisterTicketContext _dbContext;
+        _context = context;
+    }
 
-        public EventService(MisterTicketContext context)
+    public async Task<IEnumerable<EventDTO>> GetAllAsync(int? venueId = null)
+    {
+        var query = _context.Events.AsNoTracking();
+
+        if (venueId.HasValue)
+            query = query.Where(e => e.VenueId == venueId.Value);
+
+        return await query
+            .OrderBy(e => e.StartsAt)
+            .Select(e => new EventDTO
+            {
+                Id = e.Id,
+                Name = e.Name,
+                StartsAt = e.StartsAt,
+                VenueId = e.VenueId,
+                VenueName = e.Venue.Name,
+                VenueCity = e.Venue.City
+            })
+            .ToListAsync();
+    }
+
+    public async Task<EventDetailDTO?> GetByIdAsync(int id)
+    {
+        return await _context.Events
+            .AsNoTracking()
+            .Where(e => e.Id == id)
+            .Select(e => new EventDetailDTO
+            {
+                Id = e.Id,
+                Name = e.Name,
+                Description = e.Description,
+                StartsAt = e.StartsAt,
+                VenueId = e.VenueId,
+                VenueName = e.Venue.Name,
+                VenueCity = e.Venue.City,
+                OrganizerName = e.Organizer.FirstName + " " + e.Organizer.LastName,
+                TotalSeats = e.EventSeats.Count,
+                FreeSeats = e.EventSeats.Count(es => es.Status == SeatStatus.Free)
+            })
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<EventDetailDTO> CreateAsync(EventCreateDTO dto, int organizerId)
+    {
+        var venue = await _context.Venues
+            .Include(v => v.Seats)
+                .ThenInclude(s => s.PricingZone)
+            .FirstOrDefaultAsync(v => v.Id == dto.VenueId);
+
+        if (venue is null)
+            throw new InvalidOperationException($"Venue {dto.VenueId} does not exist.");
+
+        if (venue.Seats.Count == 0)
+            throw new InvalidOperationException("This venue has no seats yet; add seats before creating an event.");
+
+        var newEvent = new Event
         {
-            _dbContext = context;
+            Name = dto.Name,
+            Description = dto.Description,
+            StartsAt = dto.StartsAt,
+            VenueId = venue.Id,
+            OrganizerId = organizerId
+        };
+
+        // One EventSeat per physical seat, priced from its zone.
+        foreach (var seat in venue.Seats)
+        {
+            newEvent.EventSeats.Add(new EventSeat
+            {
+                SeatId = seat.Id,
+                Status = SeatStatus.Free,
+                Price = seat.PricingZone.BasePrice
+            });
         }
 
-        public Event Create(Event evnt)
-        {
-            // Optional: check that the Venue exists before creating the Event
-            var venue = _dbContext.Venues.Find(evnt.VenueId);
-            if (venue == null)
-                throw new KeyNotFoundException($"Venue with id {evnt.VenueId} not found");
+        _context.Events.Add(newEvent);
+        await _context.SaveChangesAsync();
 
-            _dbContext.Events.Add(evnt);
-            _dbContext.SaveChanges();
-            return evnt;
-        }
+        return (await GetByIdAsync(newEvent.Id))!;
+    }
 
-        public Event Get(int id)
-        {
-            // Include Venue info for convenience
-            var evnt = _dbContext.Events
-                .FirstOrDefault(e => e.Id == id);
+    public async Task<EventDetailDTO?> UpdateAsync(int id, EventUpdateDTO dto)
+    {
+        var existing = await _context.Events.FindAsync(id);
+        if (existing is null)
+            return null;
 
-            if (evnt == null)
-                throw new KeyNotFoundException($"Event with id {id} not found");
+        existing.Name = dto.Name;
+        existing.Description = dto.Description;
+        existing.StartsAt = dto.StartsAt;
 
-            return evnt;
-        }
+        await _context.SaveChangesAsync();
 
-        public List<Event> GetAll()
-        {
-            var events = _dbContext.Events.ToList();
+        return await GetByIdAsync(id);
+    }
 
-            return events;
-        }
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var existing = await _context.Events.FindAsync(id);
+        if (existing is null)
+            return false;
 
-        public Event Update(Event evnt)
-        {
-            var existingEvent = _dbContext.Events.Find(evnt.Id);
-            if (existingEvent == null)
-                throw new KeyNotFoundException($"Event with id {evnt.Id} not found");
+        var hasReservations = await _context.Reservations.AnyAsync(r => r.EventId == id);
+        if (hasReservations)
+            throw new InvalidOperationException("This event has reservations and cannot be deleted.");
 
-            // Optional: validate VenueId again if changed
-            var venue = _dbContext.Venues.Find(evnt.VenueId);
-            if (venue == null)
-                throw new KeyNotFoundException($"Venue with id {evnt.VenueId} not found");
-
-            // Update properties
-            existingEvent.Name = evnt.Name;
-            existingEvent.DateTime = evnt.DateTime;
-            existingEvent.Description = evnt.Description;
-            existingEvent.VenueId = evnt.VenueId;
-
-            _dbContext.SaveChangesAsync(); //async?
-            return existingEvent;
-        }
-
-        public bool Delete(int id)
-        {
-            var evnt = _dbContext.Events.Find(id);
-            if (evnt == null)
-                return false;
-
-            _dbContext.Events.Remove(evnt);
-            _dbContext.SaveChanges();
-
-            return true;
-        }
-
+        // EventSeats are removed by the cascade configured in the DbContext.
+        _context.Events.Remove(existing);
+        await _context.SaveChangesAsync();
+        return true;
     }
 }

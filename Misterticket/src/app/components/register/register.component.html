@@ -1,0 +1,52 @@
+<section class="auth">
+  <p class="eyebrow">Create account</p>
+  <h1 class="auth__title">Book your seat</h1>
+
+  <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+    <div class="form__row">
+      <label class="field">
+        <span class="field__label">First name</span>
+        <input class="field__input" type="text" formControlName="firstName" autocomplete="given-name" />
+        @if (form.controls.firstName.touched && form.controls.firstName.invalid) {
+        <span class="field__error">Enter your first name.</span>
+        }
+      </label>
+
+      <label class="field">
+        <span class="field__label">Last name</span>
+        <input class="field__input" type="text" formControlName="lastName" autocomplete="family-name" />
+        @if (form.controls.lastName.touched && form.controls.lastName.invalid) {
+        <span class="field__error">Enter your last name.</span>
+        }
+      </label>
+    </div>
+
+    <label class="field">
+      <span class="field__label">Email</span>
+      <input class="field__input" type="email" formControlName="email" autocomplete="email" />
+      @if (form.controls.email.touched && form.controls.email.invalid) {
+      <span class="field__error">Enter a valid email address.</span>
+      }
+    </label>
+
+    <label class="field">
+      <span class="field__label">Password</span>
+      <input class="field__input" type="password" formControlName="password" autocomplete="new-password" />
+      @if (form.controls.password.touched && form.controls.password.invalid) {
+      <span class="field__error">Use at least 8 characters.</span>
+      }
+    </label>
+
+    @if (errorMessage()) {
+    <p class="form__error">{{ errorMessage() }}</p>
+    }
+
+    <button class="cta" type="submit" [disabled]="submitting()">
+      {{ submitting() ? 'Creating your account…' : 'Create account' }}
+    </button>
+  </form>
+
+  <p class="auth__switch">
+    Already have an account? <a routerLink="/login">Sign in</a>
+  </p>
+</section>

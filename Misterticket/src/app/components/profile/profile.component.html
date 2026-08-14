@@ -1,0 +1,25 @@
+@if (user(); as account) {
+<section class="profile">
+  <p class="eyebrow">Your account</p>
+  <h1 class="profile__title">{{ account.firstName }} {{ account.lastName }}</h1>
+
+  <dl class="facts">
+    <div class="fact">
+      <dt>Email</dt>
+      <dd>{{ account.email }}</dd>
+    </div>
+    <div class="fact">
+      <dt>Account type</dt>
+      <dd>{{ account.role }}</dd>
+    </div>
+  </dl>
+
+  <h2 class="section__title">Your reservations</h2>
+  <p class="placeholder">
+    Your bookings will appear here once the reservation flow is built.
+    <a routerLink="/">Browse the programme</a> in the meantime.
+  </p>
+
+  <button class="link-button" type="button" (click)="onLogout()">Sign out</button>
+</section>
+}

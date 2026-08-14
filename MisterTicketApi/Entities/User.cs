@@ -1,25 +1,26 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Data;
 
-namespace MisterTicketApi.Entities
+namespace MisterTicketApi.Entities;
+
+public class User
 {
-    public class User
-    {
-        public int Id { get; set; }
-        [MaxLength(50)]
-        public required string FirstName { get; set; } = string.Empty;
-        [MaxLength(50)]
-        public required string LastName { get; set; } = string.Empty;
-        [MaxLength(100)]
-        public required string Email { get; set; } = string.Empty;
-        public Role Role { get; set; }
-        public required string Password; //??
-        public List<Reservation> ReservationsHistory { get; set; } = new List<Reservation>();
-    }
+    public int Id { get; set; }
 
-    public enum Role
-    {
-        Admin,
-        Organizer,
-        Client
-    }
+    [Required, MaxLength(120)]
+    public string FirstName { get; set; } = null!;
+
+    [Required, MaxLength(120)]
+    public string LastName { get; set; } = null!;
+
+    [Required, MaxLength(180), EmailAddress]
+    public string Email { get; set; } = null!;
+
+    [Required, MaxLength(255)]
+    public string PasswordHash { get; set; } = null!;
+
+    public Role Role { get; set; } = Role.Client;
+
+    // Navigation
+    public ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
 }

@@ -1,88 +1,106 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MisterTicketApi.Database;
+using MisterTicketApi.DTOs;
 using MisterTicketApi.Entities;
-using MisterTicketApi.Services.ServicesInterfaces;
 
-namespace MisterTicketApi.Services
+namespace MisterTicketApi.Services;
+
+public class VenueService : IVenueService
 {
-    public class VenueService : IVenueService
+    private readonly MisterTicketContext _context;
+
+    public VenueService(MisterTicketContext context)
     {
-        private readonly MisterTicketContext _dbContext;
+        _context = context;
+    }
 
-        public VenueService(MisterTicketContext context)
-        {
-            _dbContext = context;
-        }
-
-        public Venue Create(Venue venue)
-        {
-            _dbContext.Venues.Add(venue);
-            _dbContext.SaveChanges();
-            return venue;
-        }
-
-        /*public List<Venue> GetAll()
-        {
-            var venues = _dbContext.Venues.ToList();
-
-            return venues;
-        }*/
-
-        public List<Venue> GetAll()
-        {
-            var venues = _dbContext.Venues.ToList();
-            return venues;
-        }
-
-        public bool Delete(int id)
-        {
-            var venue = _dbContext.Venues.Find(id);
-            if (venue == null)
-                return false;
-
-            _dbContext.Venues.Remove(venue);
-            _dbContext.SaveChanges();
-
-            return true;
-        }
-
-        /*public Venue Get(int id)
-        {
-            var venue = _dbContext.Venues.Find(id);
-            if (venue == null)
+    public async Task<IEnumerable<VenueDTO>> GetAllAsync()
+    {
+        return await _context.Venues
+            .AsNoTracking()
+            .OrderBy(v => v.Name)
+            .Select(v => new VenueDTO
             {
-                throw new KeyNotFoundException($"Venue with id {id} not found");
-            }
+                Id = v.Id,
+                Name = v.Name,
+                City = v.City,
+                Capacity = v.Capacity,
+                SeatCount = v.Seats.Count
+            })
+            .ToListAsync();
+    }
 
-            return venue;
-        }*/
-
-        public Venue Get(int id)
-        {
-            var venue = _dbContext.Venues.FirstOrDefault(v => v.Id == id);
-
-            if (venue == null)
+    public async Task<VenueDetailDTO?> GetByIdAsync(int id)
+    {
+        return await _context.Venues
+            .AsNoTracking()
+            .Where(v => v.Id == id)
+            .Select(v => new VenueDetailDTO
             {
-                throw new KeyNotFoundException($"Venue with id {id} not found");
-            }
+                Id = v.Id,
+                Name = v.Name,
+                City = v.City,
+                Capacity = v.Capacity,
+                SeatCount = v.Seats.Count,
+                // Zones are shared, so we derive this venue's zones from its seats.
+                PricingZones = v.Seats
+                    .GroupBy(s => s.PricingZone)
+                    .Select(g => new VenueZoneDTO
+                    {
+                        Id = g.Key.Id,
+                        Name = g.Key.Name,
+                        ColorHex = g.Key.ColorHex,
+                        BasePrice = g.Key.BasePrice,
+                        SeatCount = g.Count()
+                    })
+                    .OrderBy(z => z.Name)
+                    .ToList()
+            })
+            .FirstOrDefaultAsync();
+    }
 
-            return venue;
-        }
-
-        public Venue Update(Venue venue)
+    public async Task<VenueDetailDTO> CreateAsync(VenueCreateDTO dto)
+    {
+        var venue = new Venue
         {
-            var existingVenue = _dbContext.Venues.Find(venue.Id);
-            if (existingVenue == null)
-            {
-                throw new KeyNotFoundException($"Venue with id {venue.Id} not found");
-            }
+            Name = dto.Name,
+            City = dto.City,
+            Capacity = dto.Capacity
+        };
 
-            // Update properties
-            existingVenue.Name = venue.Name;
-            existingVenue.Capacity = venue.Capacity;
-            _dbContext.SaveChanges();
+        _context.Venues.Add(venue);
+        await _context.SaveChangesAsync();
 
-            return existingVenue;
-        }
+        return (await GetByIdAsync(venue.Id))!;
+    }
+
+    public async Task<VenueDetailDTO?> UpdateAsync(int id, VenueUpdateDTO dto)
+    {
+        var venue = await _context.Venues.FindAsync(id);
+        if (venue is null)
+            return null;
+
+        venue.Name = dto.Name;
+        venue.City = dto.City;
+        venue.Capacity = dto.Capacity;
+
+        await _context.SaveChangesAsync();
+
+        return await GetByIdAsync(id);
+    }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        var venue = await _context.Venues.FindAsync(id);
+        if (venue is null)
+            return false;
+
+        var isUsed = await _context.Events.AnyAsync(e => e.VenueId == id);
+        if (isUsed)
+            throw new InvalidOperationException("This venue is used by at least one event and cannot be deleted.");
+
+        _context.Venues.Remove(venue);
+        await _context.SaveChangesAsync();
+        return true;
     }
 }

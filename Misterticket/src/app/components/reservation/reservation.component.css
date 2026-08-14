@@ -1,0 +1,372 @@
+.notice {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--cream-dim);
+  padding: 4rem 0;
+}
+
+.head {
+  padding: 2.5rem 0 2rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.back {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--cream);
+  text-decoration: none;
+}
+
+  .back:hover,
+  .back:focus-visible {
+    color: var(--brass);
+  }
+
+.head__meta {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cream-faint);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 17rem;
+  gap: 2.5rem;
+  align-items: start;
+  padding: 2.5rem 0 6rem;
+}
+
+/* ------------------------------- seat map ------------------------------- */
+
+.stage {
+  display: grid;
+  place-items: center;
+  height: 2.75rem;
+  margin-bottom: 2.25rem;
+  /* A shallow arc, like the front of a real stage. */
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+  background: linear-gradient(var(--plum-raised), transparent);
+  border-top: 2px solid var(--brass);
+}
+
+  .stage span {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--brass);
+  }
+
+.rows {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1.25rem 1fr 1.25rem;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.row__label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--cream-faint);
+  text-align: center;
+}
+
+.row__seats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.28rem;
+}
+
+.seat {
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border-radius: 3px 3px 1px 1px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+/* Colour states come from the status, not from the pricing zone. */
+.seat--free {
+  color: var(--seat-free);
+  background: color-mix(in srgb, var(--seat-free) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--seat-free) 55%, transparent);
+}
+
+  .seat--free:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--seat-free) 32%, transparent);
+    transform: translateY(-2px);
+  }
+
+.seat--reserved {
+  color: var(--seat-reserved);
+  background: color-mix(in srgb, var(--seat-reserved) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--seat-reserved) 55%, transparent);
+  cursor: not-allowed;
+}
+
+.seat--paid {
+  color: var(--seat-paid);
+  background: color-mix(in srgb, var(--seat-paid) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--seat-paid) 55%, transparent);
+  cursor: not-allowed;
+}
+
+/* Your own pick wins over the status colour. */
+.seat--selected,
+.seat--selected:hover:not(:disabled) {
+  background: var(--brass);
+  border-color: var(--brass);
+  color: var(--plum);
+  cursor: pointer;
+}
+
+/* Seats held or paid by this user: brass outline, status fill kept. */
+.seat--mine:not(.seat--selected) {
+  border-color: var(--brass);
+}
+
+/* ------------------------------- side panel ----------------------------- */
+
+.panel {
+  position: sticky;
+  top: 2rem;
+  padding: 1.5rem;
+  background: var(--plum-raised);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+}
+
+.panel__eyebrow {
+  margin: 0 0 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cream-faint);
+}
+
+.panel__empty,
+.panel__hint {
+  margin: 0 0 1.25rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--cream-dim);
+}
+
+.panel__error {
+  margin: 0 0 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: var(--curtain);
+}
+
+.timer {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 2.5rem;
+  line-height: 1;
+  color: var(--brass);
+}
+
+.timer--urgent {
+  color: var(--curtain);
+}
+
+.tally {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.tally__line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.tally__zone {
+  color: var(--cream-dim);
+}
+
+.tally__price {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--cream);
+}
+
+.total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0 0 1.5rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cream-faint);
+}
+
+.total__amount {
+  font-size: 1.35rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--brass);
+}
+
+.panel .cta {
+  width: 100%;
+  justify-self: stretch;
+  margin: 0;
+}
+
+.link-button {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0;
+  background: none;
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cream-faint);
+  cursor: pointer;
+}
+
+  .link-button:hover:not(:disabled) {
+    color: var(--curtain);
+  }
+
+.legend {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+  display: grid;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--cream-faint);
+}
+
+  .legend li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+.legend__box {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 2px;
+}
+
+@media (max-width: 52rem) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    position: static;
+    order: -1;
+  }
+
+  .seat {
+    width: 1.3rem;
+    height: 1.3rem;
+    font-size: 0.5rem;
+  }
+}
+
+.band {
+  margin-bottom: 1.75rem;
+  padding: 0.9rem 0.75rem 1rem;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  /* A faint wash so each price zone reads as one block. */
+  background: color-mix(in srgb, var(--brass) 4%, transparent);
+}
+
+.band__head {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 0.9rem;
+  padding: 0 0.5rem;
+}
+
+.band__zone {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cream);
+  white-space: nowrap;
+}
+
+.band__rule {
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+.band__price {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  color: var(--brass);
+  white-space: nowrap;
+}
+
+.band__per {
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cream-faint);
+}
+
+.legend__box--free {
+  background: var(--seat-free);
+}
+
+.legend__box--reserved {
+  background: var(--seat-reserved);
+}
+
+.legend__box--paid {
+  background: var(--seat-paid);
+}
+
+.legend__box--selected {
+  background: var(--brass);
+}
+
+
+
+@media (prefers-reduced-motion: reduce) {
+  .seat {
+    transition: none;
+  }
+
+    .seat:hover:not(:disabled) {
+      transform: none;
+    }
+}

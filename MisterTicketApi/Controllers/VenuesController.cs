@@ -1,117 +1,76 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MisterTicketApi.Entities;
-using MisterTicketApi.Services.ServicesInterfaces;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using MisterTicketApi.DTOs;
+using MisterTicketApi.Services;
 
-namespace MisterTicketApi.Controllers
+namespace MisterTicketApi.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class VenuesController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class VenuesController : ControllerBase
+    private readonly IVenueService _venueService;
+
+    public VenuesController(IVenueService venueService)
     {
-        private readonly IVenueService venueService;
+        _venueService = venueService;
+    }
 
-        public VenuesController(IVenueService venueService)
+    // GET: api/venues
+    [HttpGet]
+    [AllowAnonymous]
+    public async Task<ActionResult<IEnumerable<VenueDTO>>> GetAll()
+    {
+        var venues = await _venueService.GetAllAsync();
+        return Ok(venues);
+    }
+
+    // GET: api/venues/5
+    [HttpGet("{id:int}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<VenueDetailDTO>> GetById(int id)
+    {
+        var venue = await _venueService.GetByIdAsync(id);
+        if (venue is null)
+            return NotFound();
+
+        return Ok(venue);
+    }
+
+    // POST: api/venues
+    [HttpPost]
+    [Authorize(Roles = "Admin,Organizer")]
+    public async Task<ActionResult<VenueDetailDTO>> Create(VenueCreateDTO dto)
+    {
+        var created = await _venueService.CreateAsync(dto);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+    }
+
+    // PUT: api/venues/5
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin,Organizer")]
+    public async Task<ActionResult<VenueDetailDTO>> Update(int id, VenueUpdateDTO dto)
+    {
+        var updated = await _venueService.UpdateAsync(id, dto);
+        if (updated is null)
+            return NotFound();
+
+        return Ok(updated);
+    }
+
+    // DELETE: api/venues/5
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin,Organizer")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        try
         {
-            this.venueService = venueService;
+            var deleted = await _venueService.DeleteAsync(id);
+            return deleted ? NoContent() : NotFound();
         }
-
-        // GET: api/venues/5
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
+        catch (InvalidOperationException ex)
         {
-            try
-            {
-                var venue = await Task.Run(() => venueService.Get(id));
-                if (venue is null) return NotFound("Venue Not Found");
-                return Ok(venue);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (ArgumentException ex)
-            {
-                return StatusCode((int)System.Net.HttpStatusCode.InternalServerError, ex.Message);
-            }
-        }
-
-        // GET: api/venues
-        [HttpGet]
-        public async Task<ActionResult> GetAll()
-        {
-            try
-            {
-                var venues = await Task.Run(() => venueService.GetAll());
-                if (venues is null || !venues.Any())
-                    return NotFound("No venues found");
-                return Ok(venues);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (ArgumentException ex)
-            {
-                return StatusCode((int)System.Net.HttpStatusCode.InternalServerError, ex.Message);
-            }
-        }
-
-        // POST: api/venues
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] Venue newVenue)
-        {
-            try
-            {
-                var result = await Task.Run(() => venueService.Create(newVenue));
-                return CreatedAtAction(nameof(Get), new { id = result.Id }, result);
-            }
-            catch (ArgumentException ex)
-            {
-                return StatusCode((int)System.Net.HttpStatusCode.InternalServerError, ex.Message);
-            }
-        }
-
-        // PUT: api/venues/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] Venue newVenue)
-        {
-            try
-            {
-                if (id != newVenue.Id)
-                    return BadRequest("ID mismatch");
-
-                var updatedVenue = await Task.Run(() => venueService.Update(newVenue));
-                if (updatedVenue is null) return NotFound("Venue Not Found");
-                return Ok(updatedVenue);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (ArgumentException ex)
-            {
-                return StatusCode((int)System.Net.HttpStatusCode.InternalServerError, ex.Message);
-            }
-        }
-
-        // DELETE: api/venues/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            try
-            {
-                var result = await Task.Run(() => venueService.Delete(id));
-                if (!result) return BadRequest("Something went wrong");
-                return NoContent();
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (ArgumentException ex)
-            {
-                return StatusCode((int)System.Net.HttpStatusCode.InternalServerError, ex.Message);
-            }
+            return Conflict(new { message = ex.Message });
         }
     }
 }

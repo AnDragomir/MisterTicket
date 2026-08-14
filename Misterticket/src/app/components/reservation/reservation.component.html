@@ -1,0 +1,116 @@
+@if (loadFailed()) {
+<p class="notice">The seat map could not be loaded. Check that the API is running, then reload.</p>
+} @else if (seatMap(); as map) {
+
+<header class="head">
+  <a class="back" [routerLink]="['/events', eventId]">← {{ map.eventName }}</a>
+  <p class="head__meta">
+    {{ map.venueName }} · {{ map.startsAt | date: 'EEEE d MMMM, HH:mm' }}
+  </p>
+</header>
+
+<div class="layout">
+  <!-- ------------------------------- the map ------------------------------- -->
+  <div class="map">
+    <div class="stage"><span>Stage</span></div>
+
+    <!-- One block per price zone, labelled with what a seat there costs. -->
+    @for (band of zoneBands(); track band.zoneId) {
+    <section class="band">
+      <header class="band__head">
+        <span class="band__zone">{{ band.zoneName }}</span>
+        <span class="band__rule"></span>
+        <span class="band__price">€ {{ band.price | number: '1.2-2' }} <span class="band__per">per seat</span></span>
+      </header>
+
+      <div class="rows">
+        @for (row of band.rows; track row.label) {
+        <div class="row">
+          <span class="row__label">{{ row.label }}</span>
+
+          <div class="row__seats">
+            @for (seat of row.seats; track seat.id) {
+            <button class="seat"
+                    type="button"
+                    [class.seat--free]="seat.status === 'Free'"
+                    [class.seat--reserved]="seat.status === 'Reserved'"
+                    [class.seat--paid]="seat.status === 'Paid'"
+                    [class.seat--selected]="isSelected(seat)"
+                    [class.seat--mine]="seat.isMine"
+                    [disabled]="!isSelectable(seat) && !isSelected(seat)"
+                    [attr.aria-pressed]="isSelected(seat)"
+                    [title]="seat.pricingZoneName + ' · ' + seat.rowLabel + seat.number + ' · € ' + seat.price"
+                    (click)="onSeatClick(seat)">
+              {{ seat.number }}
+            </button>
+            }
+          </div>
+
+          <span class="row__label">{{ row.label }}</span>
+        </div>
+        }
+      </div>
+    </section>
+    }
+  </div>
+
+  <!-- ------------------------------- the panel ----------------------------- -->
+  <aside class="panel">
+    @if (reservation(); as held) {
+    <p class="panel__eyebrow">Seats held</p>
+    <p class="timer" [class.timer--urgent]="secondsLeft() < 120">{{ countdown() }}</p>
+    <p class="panel__hint">
+      Pay before the clock runs out or the seats go back on sale.
+    </p>
+    } @else {
+    <p class="panel__eyebrow">Your selection</p>
+    }
+
+    @if (tally().length === 0 && !reservation()) {
+    <p class="panel__empty">Click a green seat to add it to your selection.</p>
+    } @else {
+    <ul class="tally">
+      @for (line of tally(); track line.zoneName) {
+      <li class="tally__line">
+        <span class="tally__zone">×{{ line.count }} {{ line.zoneName }}</span>
+        <span class="tally__price">€ {{ line.subtotal | number: '1.2-2' }}</span>
+      </li>
+      }
+    </ul>
+
+    <p class="total">
+      <span>Total</span>
+      <span class="total__amount">€ {{ total() | number: '1.2-2' }}</span>
+    </p>
+    }
+
+    @if (errorMessage()) {
+    <p class="panel__error">{{ errorMessage() }}</p>
+    }
+
+    @if (reservation()) {
+    <button class="cta" type="button" [disabled]="working()" (click)="onPay()">Go to payment</button>
+    <button class="link-button" type="button" [disabled]="working()" (click)="onRelease()">
+      Release my seats
+    </button>
+    } @else {
+    <button class="cta"
+            type="button"
+            [disabled]="tally().length === 0 || working()"
+            (click)="onProceedToPayment()">
+      {{ working() ? 'Holding your seats…' : 'Proceed to payment' }}
+    </button>
+    }
+
+    <ul class="legend">
+      <li><span class="legend__box legend__box--free"></span> Free</li>
+      <li><span class="legend__box legend__box--reserved"></span> Reserved</li>
+      <li><span class="legend__box legend__box--paid"></span> Paid</li>
+      <li><span class="legend__box legend__box--selected"></span> Your pick</li>
+    </ul>
+  </aside>
+</div>
+
+} @else {
+<p class="notice">Loading the seat map…</p>
+}
