@@ -1,0 +1,93 @@
+<div class="panel-grid">
+  <section class="card">
+    <h2 class="card__title">{{ editingId() === null ? 'New event' : 'Edit event' }}</h2>
+
+    <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+      <label class="field">
+        <span class="field__label">Title</span>
+        <input class="field__input" type="text" formControlName="name" placeholder="Cyrano de Bergerac" />
+        @if (form.controls.name.touched && form.controls.name.invalid) {
+        <span class="field__error">A title is required.</span>
+        }
+      </label>
+
+      <label class="field">
+        <span class="field__label">Description</span>
+        <textarea class="field__input" rows="3" formControlName="description"></textarea>
+      </label>
+
+      <div class="form__row">
+        <label class="field">
+          <span class="field__label">Starts at</span>
+          <input class="field__input" type="datetime-local" formControlName="startsAt" />
+          @if (form.controls.startsAt.touched && form.controls.startsAt.invalid) {
+          <span class="field__error">Pick a date and time.</span>
+          }
+        </label>
+
+        <label class="field">
+          <span class="field__label">Venue</span>
+          <select class="field__input" formControlName="venueId">
+            <option [value]="0" disabled>Pick a venue</option>
+            @for (venue of venues(); track venue.id) {
+            <option [value]="venue.id">{{ venue.name }} ({{ venue.seatCount }} seats)</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      @if (editingId() === null) {
+      <p class="field__hint">
+        Creating the event generates one seat per seat of the venue, priced from
+        each zone's base price. Only venues that already have seats are listed.
+      </p>
+      } @else {
+      <p class="field__hint">
+        The venue cannot change: every booked seat belongs to the original room.
+      </p>
+      }
+
+      @if (errorMessage()) {
+      <p class="form__error">{{ errorMessage() }}</p>
+      }
+
+      <div class="form__actions">
+        <button class="cta" type="submit" [disabled]="working()">
+          {{ editingId() === null ? 'Create event' : 'Save changes' }}
+        </button>
+        @if (editingId() !== null) {
+        <button class="link-button" type="button" (click)="onCancelEdit()">Cancel</button>
+        }
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2 class="card__title">Programme</h2>
+
+    @if (events().length === 0) {
+    <p class="card__empty">No event yet.</p>
+    } @else {
+    <table class="table">
+      <thead>
+        <tr><th>Event</th><th>Date</th><th></th></tr>
+      </thead>
+      <tbody>
+        @for (event of events(); track event.id) {
+        <tr>
+          <td>
+            {{ event.name }}
+            <span class="table__sub">{{ event.venueName }}</span>
+          </td>
+          <td class="table__num">{{ event.startsAt | date: 'dd/MM/yy HH:mm' }}</td>
+          <td class="table__actions">
+            <button type="button" (click)="onEdit(event)">Edit</button>
+            <button type="button" class="danger" (click)="onDelete(event)">Delete</button>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+    }
+  </section>
+</div>

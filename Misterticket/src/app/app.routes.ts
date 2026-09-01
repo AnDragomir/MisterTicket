@@ -7,6 +7,12 @@ import { ProfileComponent } from './components/profile/profile.component';
 import { ReservationComponent } from './components/reservation/reservation.component';
 import { PaymentComponent } from './components/payment/payment.component';
 import { authGuard } from './authelpers/auth.guard';
+import { adminGuard } from './authelpers/admin.guard'; //change
+import { DashboardComponent } from './components/dashboard/dashboard.component';
+import { EventAdminComponent } from './components/dashboard/event-admin/event-admin.component';
+import { VenueAdminComponent } from './components/dashboard/venue-admin/venue-admin.component';
+import { ZoneAdminComponent } from './components/dashboard/zone-admin/zone-admin.component';
+
 
 export const routes: Routes = [
   { path: '', component: EventListComponent, title: 'MisterTicket — What\'s on stage' },
@@ -34,6 +40,21 @@ export const routes: Routes = [
     canActivate: [authGuard],
     title: 'MisterTicket — Your account'
   },
+
+  // Admin / Organizer only.
+  {
+    path: 'dashboard',
+    component: DashboardComponent,
+    canActivate: [adminGuard],
+    title: 'MisterTicket — Dashboard',
+    children: [
+      { path: '', redirectTo: 'events', pathMatch: 'full' },
+      { path: 'events', component: EventAdminComponent },
+      { path: 'venues', component: VenueAdminComponent },
+      { path: 'zones', component: ZoneAdminComponent }
+    ]
+  },
+
 
   { path: '**', redirectTo: '' }
 ];

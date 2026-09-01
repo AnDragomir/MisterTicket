@@ -36,8 +36,8 @@
                     [class.seat--reserved]="seat.status === 'Reserved'"
                     [class.seat--paid]="seat.status === 'Paid'"
                     [class.seat--selected]="isSelected(seat)"
-                    [class.seat--mine]="seat.isMine"
-                    [disabled]="!isSelectable(seat) && !isSelected(seat)"
+                    [class.seat--busy]="isBusy(seat)"
+                    [disabled]="!isSelectable(seat) || isBusy(seat)"
                     [attr.aria-pressed]="isSelected(seat)"
                     [title]="seat.pricingZoneName + ' · ' + seat.rowLabel + seat.number + ' · € ' + seat.price"
                     (click)="onSeatClick(seat)">
@@ -56,19 +56,13 @@
 
   <!-- ------------------------------- the panel ----------------------------- -->
   <aside class="panel">
-    @if (reservation(); as held) {
+    @if (reservation()) {
     <p class="panel__eyebrow">Seats held</p>
     <p class="timer" [class.timer--urgent]="secondsLeft() < 120">{{ countdown() }}</p>
     <p class="panel__hint">
-      Pay before the clock runs out or the seats go back on sale.
+      Your seats are reserved. Pay before the clock runs out or they go back on sale.
     </p>
-    } @else {
-    <p class="panel__eyebrow">Your selection</p>
-    }
 
-    @if (tally().length === 0 && !reservation()) {
-    <p class="panel__empty">Click a green seat to add it to your selection.</p>
-    } @else {
     <ul class="tally">
       @for (line of tally(); track line.zoneName) {
       <li class="tally__line">
@@ -82,6 +76,12 @@
       <span>Total</span>
       <span class="total__amount">€ {{ total() | number: '1.2-2' }}</span>
     </p>
+    } @else {
+    <p class="panel__eyebrow">Your selection</p>
+    <p class="panel__empty">
+      Click a green seat: it is reserved for you straight away, and you get
+      15 minutes from that first click to pay.
+    </p>
     }
 
     @if (errorMessage()) {
@@ -89,17 +89,12 @@
     }
 
     @if (reservation()) {
-    <button class="cta" type="button" [disabled]="working()" (click)="onPay()">Go to payment</button>
-    <button class="link-button" type="button" [disabled]="working()" (click)="onRelease()">
-      Release my seats
+    <button class="cta" type="button" (click)="onPay()">Proceed to payment</button>
+    <button class="link-button" type="button" (click)="onRelease()">
+      Release all my seats
     </button>
     } @else {
-    <button class="cta"
-            type="button"
-            [disabled]="tally().length === 0 || working()"
-            (click)="onProceedToPayment()">
-      {{ working() ? 'Holding your seats…' : 'Proceed to payment' }}
-    </button>
+    <button class="cta" type="button" disabled>Proceed to payment</button>
     }
 
     <ul class="legend">

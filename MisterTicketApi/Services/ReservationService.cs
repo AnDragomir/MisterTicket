@@ -65,60 +65,113 @@ public class ReservationService : IReservationService
         };
     }
 
-    // ---------------------------------------------------------- reservation
+    // --------------------------------------------------------- claim seats
 
-    public async Task<ReservationDTO> CreateAsync(ReservationCreateDTO dto, int userId)
+    public async Task<ReservationDTO?> GetActiveAsync(int eventId, int userId)
     {
-        await ReleaseExpiredAsync(dto.EventId);
+        await ReleaseExpiredAsync(eventId);
 
-        var eventExists = await _context.Events.AnyAsync(e => e.Id == dto.EventId);
-        if (!eventExists)
-            throw new InvalidOperationException($"Event {dto.EventId} does not exist.");
+        var active = await FindPendingAsync(eventId, userId);
 
-        var requestedIds = dto.EventSeatIds.Distinct().ToList();
+        return active is null ? null : await GetByIdAsync(active.Id, userId);
+    }
 
-        // A transaction so two clients cannot both walk away with the same seat.
-        await using var transaction = await _context.Database.BeginTransactionAsync();
+    public async Task<ReservationDTO> ClaimSeatAsync(int eventId, int eventSeatId, int userId)
+    {
+        await ReleaseExpiredAsync(eventId);
 
-        var seats = await _context.EventSeats
-            .Where(es => requestedIds.Contains(es.Id) && es.EventId == dto.EventId)
-            .ToListAsync();
+        var seatBelongs = await _context.EventSeats
+            .AnyAsync(es => es.Id == eventSeatId && es.EventId == eventId);
 
-        if (seats.Count != requestedIds.Count)
-            throw new InvalidOperationException("Some seats do not belong to this event.");
+        if (!seatBelongs)
+            throw new InvalidOperationException("That seat does not belong to this event.");
 
-        var alreadyTaken = seats.Where(es => es.Status != SeatStatus.Free).ToList();
-        if (alreadyTaken.Count > 0)
-            throw new InvalidOperationException(
-                $"{alreadyTaken.Count} of the seats you picked have just been taken. Reload the map and try again.");
+        var reservation = await FindPendingAsync(eventId, userId);
+        var isNewBasket = reservation is null;
 
-        var now = DateTime.UtcNow;
-
-        var reservation = new Reservation
+        if (reservation is null)
         {
-            UserId = userId,
-            EventId = dto.EventId,
-            Status = ReservationStatus.Pending,
-            CreatedAt = now,
-            ExpiresAt = now.Add(IReservationService.HoldDuration),
-            TotalAmount = seats.Sum(es => es.Price)
-        };
+            var now = DateTime.UtcNow;
 
-        foreach (var seat in seats)
-        {
-            seat.Status = SeatStatus.Reserved;
-            seat.Reservation = reservation;
+            reservation = new Reservation
+            {
+                UserId = userId,
+                EventId = eventId,
+                Status = ReservationStatus.Pending,
+                CreatedAt = now,
+                // The clock starts on the first seat and is never extended.
+                ExpiresAt = now.Add(IReservationService.HoldDuration),
+                TotalAmount = 0
+            };
+
+            _context.Reservations.Add(reservation);
+            await _context.SaveChangesAsync();
         }
 
-        _context.Reservations.Add(reservation);
-        await _context.SaveChangesAsync();
-        await transaction.CommitAsync();
+        // The status check lives inside the UPDATE, so the database decides who
+        // wins when two clients click the same seat: exactly one row matches.
+        var claimed = await _context.EventSeats
+            .Where(es => es.Id == eventSeatId
+                      && es.EventId == eventId
+                      && es.Status == SeatStatus.Free)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(es => es.Status, SeatStatus.Reserved)
+                .SetProperty(es => es.ReservationId, reservation.Id));
 
-        // Everyone watching this event sees the seats go orange.
-        await BroadcastAsync(dto.EventId, seats);
+        if (claimed == 0)
+        {
+            // Do not leave an empty basket behind if this was the first click.
+            if (isNewBasket)
+            {
+                _context.Reservations.Remove(reservation);
+                await _context.SaveChangesAsync();
+            }
+
+            throw new InvalidOperationException("That seat was just taken by someone else.");
+        }
+
+        await UpdateTotalAsync(reservation.Id);
+        await BroadcastStatusAsync(eventId, new[] { eventSeatId }, SeatStatus.Reserved);
 
         return (await GetByIdAsync(reservation.Id, userId))!;
     }
+
+    public async Task<ReservationDTO?> ReleaseSeatAsync(int eventId, int eventSeatId, int userId)
+    {
+        var reservation = await FindPendingAsync(eventId, userId)
+            ?? throw new InvalidOperationException("You are not holding any seat for this event.");
+
+        var released = await _context.EventSeats
+            .Where(es => es.Id == eventSeatId
+                      && es.EventId == eventId
+                      && es.ReservationId == reservation.Id
+                      && es.Status == SeatStatus.Reserved)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(es => es.Status, SeatStatus.Free)
+                .SetProperty(es => es.ReservationId, (int?)null));
+
+        if (released == 0)
+            throw new InvalidOperationException("That seat is not one of yours.");
+
+        await BroadcastStatusAsync(eventId, new[] { eventSeatId }, SeatStatus.Free);
+
+        var remaining = await _context.EventSeats.CountAsync(es => es.ReservationId == reservation.Id);
+
+        if (remaining == 0)
+        {
+            // An empty basket is not a reservation any more.
+            reservation.Status = ReservationStatus.Cancelled;
+            reservation.TotalAmount = 0;
+            await _context.SaveChangesAsync();
+            return null;
+        }
+
+        await UpdateTotalAsync(reservation.Id);
+
+        return await GetByIdAsync(reservation.Id, userId);
+    }
+
+    // ---------------------------------------------------------- reservation
 
     public async Task<ReservationDTO?> GetByIdAsync(int reservationId, int userId)
     {
@@ -151,6 +204,7 @@ public class ReservationService : IReservationService
 
         ReleaseSeats(reservation);
         reservation.Status = ReservationStatus.Cancelled;
+        reservation.TotalAmount = 0;
 
         await _context.SaveChangesAsync();
 
@@ -201,21 +255,63 @@ public class ReservationService : IReservationService
         return expired.Count;
     }
 
+    // ------------------------------------------------------------- helpers
+
+    /// <summary>The basket this user is filling for this event, if there is one.</summary>
+    private async Task<Reservation?> FindPendingAsync(int eventId, int userId)
+    {
+        return await _context.Reservations
+            .FirstOrDefaultAsync(r => r.EventId == eventId
+                                   && r.UserId == userId
+                                   && r.Status == ReservationStatus.Pending);
+    }
+
+    /// <summary>Recomputes the basket total from the seats it currently holds.</summary>
+    private async Task UpdateTotalAsync(int reservationId)
+    {
+        var total = await _context.EventSeats
+            .Where(es => es.ReservationId == reservationId)
+            .SumAsync(es => es.Price);
+
+        var reservation = await _context.Reservations.FindAsync(reservationId);
+        if (reservation is null)
+            return;
+
+        reservation.TotalAmount = total;
+        await _context.SaveChangesAsync();
+    }
+
     // ----------------------------------------------------------- broadcast
 
     /// <summary>Pushes the new status of these seats to everyone on the event's map.</summary>
     private async Task BroadcastAsync(int eventId, IEnumerable<EventSeat> seats)
     {
+        await SendAsync(eventId, seats.Select(es => new SeatStatusChangeDTO
+        {
+            EventSeatId = es.Id,
+            Status = es.Status.ToString()
+        }));
+    }
+
+    /// <summary>
+    /// Same, for seats changed with ExecuteUpdate: no entity is loaded, so the
+    /// payload is built from the ids and the status we just wrote.
+    /// </summary>
+    private async Task BroadcastStatusAsync(int eventId, IEnumerable<int> eventSeatIds, SeatStatus status)
+    {
+        await SendAsync(eventId, eventSeatIds.Select(id => new SeatStatusChangeDTO
+        {
+            EventSeatId = id,
+            Status = status.ToString()
+        }));
+    }
+
+    private async Task SendAsync(int eventId, IEnumerable<SeatStatusChangeDTO> changes)
+    {
         var payload = new SeatsChangedDTO
         {
             EventId = eventId,
-            Seats = seats
-                .Select(es => new SeatStatusChangeDTO
-                {
-                    EventSeatId = es.Id,
-                    Status = es.Status.ToString()
-                })
-                .ToList()
+            Seats = changes.ToList()
         };
 
         if (payload.Seats.Count == 0)

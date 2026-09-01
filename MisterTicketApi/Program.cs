@@ -25,6 +25,8 @@ builder.Services.AddScoped<IPricingZoneService, PricingZoneService>();
 builder.Services.AddScoped<ISeatService, SeatService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<ITicketService, TicketService>();
 
 // Password hashing: ships with ASP.NET Core, no extra package needed.
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
@@ -95,7 +97,8 @@ builder.Services.AddCors(options =>
         .WithOrigins("http://localhost:64448")
         .AllowAnyHeader()
         .AllowAnyMethod()
-        .AllowCredentials());
+        .AllowCredentials()
+        .WithExposedHeaders("Content-Disposition"));
 });
 
 builder.Services.AddSignalR();
@@ -111,6 +114,7 @@ if (app.Environment.IsDevelopment())
 }
 
 //app.UseHttpsRedirection();
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
 app.UseCors("Angular");
 

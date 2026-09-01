@@ -359,6 +359,12 @@
   background: var(--brass);
 }
 
+/* A seat with a request in flight. */
+.seat--busy {
+  opacity: 0.5;
+  cursor: progress;
+}
+
 
 
 @media (prefers-reduced-motion: reduce) {

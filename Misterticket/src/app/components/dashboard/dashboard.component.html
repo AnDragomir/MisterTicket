@@ -1,0 +1,17 @@
+<header class="dash-head">
+  <div>
+    <p class="eyebrow">Dashboard</p>
+    <h1 class="dash-head__title">Manage the house</h1>
+  </div>
+  @if (user(); as account) {
+  <p class="dash-head__who">{{ account.firstName }} {{ account.lastName }} · {{ account.role }}</p>
+  }
+</header>
+
+<nav class="tabs">
+  <a routerLink="events" routerLinkActive="tabs__link--active">Events</a>
+  <a routerLink="venues" routerLinkActive="tabs__link--active">Venues</a>
+  <a routerLink="zones" routerLinkActive="tabs__link--active">Pricing zones</a>
+</nav>
+
+<router-outlet />

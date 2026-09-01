@@ -6,6 +6,10 @@
   <nav class="masthead__nav">
     <a routerLink="/">Programme</a>
 
+    @if (isStaff()) {
+    <a routerLink="/dashboard">Dashboard</a>
+    }
+
     @if (currentUser(); as account) {
     <a class="account" routerLink="/profile">
       <span class="account__initials">{{ account.firstName[0] }}{{ account.lastName[0] }}</span>

@@ -39,14 +39,18 @@ export class ReservationComponent {
   readonly seatMap = signal<SeatMap | null>(null);
   readonly loadFailed = signal(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly working = signal(false);
 
-  /** Seats picked but not yet held. */
-  readonly selectedIds = signal<ReadonlySet<number>>(new Set());
-
-  /** Set once the seats are held; drives the countdown. */
+  /** The basket: created by the first click, gone when the last seat is given back. */
   readonly reservation = signal<Reservation | null>(null);
   readonly secondsLeft = signal(0);
+
+  /** Seats with a request in flight, so a double click cannot fire twice. */
+  readonly busySeatIds = signal<ReadonlySet<number>>(new Set());
+
+  /** Ids currently in the basket. */
+  readonly heldSeatIds = computed<ReadonlySet<number>>(() =>
+    new Set(this.reservation()?.seats.map(seat => seat.eventSeatId) ?? [])
+  );
 
   /** Rows in stage-to-back order, which is simply alphabetical. */
   readonly rows = computed<SeatRow[]>(() => {
@@ -96,15 +100,15 @@ export class ReservationComponent {
     return bands;
   });
 
-  /** "x2 VIP, x3 Balcon" with a subtotal per zone. */
+  /** "x2 VIP, x3 Balcon", straight from the basket the API returned. */
   readonly tally = computed<ZoneTally[]>(() => {
-    const picked = this.pickedSeats();
+    const seats = this.reservation()?.seats ?? [];
     const byZone = new Map<string, ZoneTally>();
 
-    for (const seat of picked) {
+    for (const seat of seats) {
       const line = byZone.get(seat.pricingZoneName) ?? {
         zoneName: seat.pricingZoneName,
-        zoneColor: seat.pricingZoneColor,
+        zoneColor: '',
         count: 0,
         subtotal: 0
       };
@@ -116,9 +120,8 @@ export class ReservationComponent {
     return [...byZone.values()].sort((a, b) => b.subtotal - a.subtotal);
   });
 
-  readonly total = computed(() =>
-    this.pickedSeats().reduce((sum, seat) => sum + seat.price, 0)
-  );
+  /** The API keeps the total, so there is one source of truth for the price. */
+  readonly total = computed(() => this.reservation()?.totalAmount ?? 0);
 
   readonly countdown = computed(() => {
     const seconds = Math.max(0, this.secondsLeft());
@@ -129,6 +132,15 @@ export class ReservationComponent {
 
   constructor() {
     this.loadSeatMap();
+
+    // A basket may already exist: the client reloaded or came back to the page.
+    this.reservationService.getActive(this.eventId).subscribe({
+      next: active => {
+        this.reservation.set(active);
+        this.tick();
+      },
+      error: () => { /* no basket is not an error worth showing */ }
+    });
 
     // One ticker for the whole page; it only does something while a hold is live.
     interval(1000)
@@ -156,102 +168,96 @@ export class ReservationComponent {
     if (!map) return;
 
     const changes = new Map(update.seats.map(seat => [seat.eventSeatId, seat.status]));
+    const mine = this.heldSeatIds();
 
     this.seatMap.set({
       ...map,
       seats: map.seats.map(seat => {
         const status = changes.get(seat.id);
-        return status ? { ...seat, status } : seat;
+        if (!status) return seat;
+
+        // Our own seats keep their "mine" flag; a freed seat loses it.
+        return { ...seat, status, isMine: status === 'Free' ? false : mine.has(seat.id) };
       })
     });
-
-    // A seat we had picked but had not held yet may have just been taken.
-    const stillFree = new Set(
-      [...this.selectedIds()].filter(id => {
-        const status = changes.get(id);
-        return status === undefined || status === 'Free';
-      })
-    );
-
-    if (stillFree.size !== this.selectedIds().size) {
-      this.selectedIds.set(stillFree);
-      this.errorMessage.set('One of your picked seats was just taken by someone else.');
-    }
-  }
-
-  private pickedSeats(): EventSeatItem[] {
-    const map = this.seatMap();
-    const ids = this.selectedIds();
-    return map ? map.seats.filter(seat => ids.has(seat.id)) : [];
   }
 
   private loadSeatMap(): void {
     this.reservationService.getSeatMap(this.eventId).subscribe({
       next: map => this.seatMap.set(map),
-      error: () => this.loadFailed.set(true)
+      error: response => {
+        console.error('Seat map failed:', response.status, response.error);
+        this.loadFailed.set(true);
+      }
     });
   }
 
   isSelected(seat: EventSeatItem): boolean {
-    return this.selectedIds().has(seat.id);
+    return this.heldSeatIds().has(seat.id);
   }
 
-  /** A seat can be picked only while nothing is held yet. */
+  isBusy(seat: EventSeatItem): boolean {
+    return this.busySeatIds().has(seat.id);
+  }
+
+  /** Free seats can be taken; the ones already in the basket can be given back. */
   isSelectable(seat: EventSeatItem): boolean {
-    return seat.status === 'Free' && this.reservation() === null;
+    return seat.status === 'Free' || this.isSelected(seat);
   }
 
+  /**
+   * One click, one server call: the seat changes status immediately for
+   * everyone, not only for this client.
+   */
   onSeatClick(seat: EventSeatItem): void {
-    if (!this.isSelectable(seat)) return;
+    if (!this.isSelectable(seat) || this.isBusy(seat)) return;
 
-    const next = new Set(this.selectedIds());
-    next.has(seat.id) ? next.delete(seat.id) : next.add(seat.id);
-    this.selectedIds.set(next);
-  }
-
-  /** Holds the seats, then sends the client straight to payment. */
-  onProceedToPayment(): void {
-    const ids = [...this.selectedIds()];
-    if (ids.length === 0 || this.working()) return;
-
-    this.working.set(true);
     this.errorMessage.set(null);
+    this.markBusy(seat.id, true);
 
-    this.reservationService.hold({ eventId: this.eventId, eventSeatIds: ids }).subscribe({
+    const done = () => this.markBusy(seat.id, false);
+
+    if (this.isSelected(seat)) {
+      this.reservationService.releaseSeat(this.eventId, seat.id).subscribe({
+        next: reservation => {
+          this.reservation.set(reservation);
+          if (!reservation) this.secondsLeft.set(0);
+          done();
+        },
+        error: response => {
+          done();
+          this.fail(response, 'That seat could not be released.');
+        }
+      });
+      return;
+    }
+
+    this.reservationService.claimSeat(this.eventId, seat.id).subscribe({
       next: reservation => {
-        this.working.set(false);
         this.reservation.set(reservation);
-        this.router.navigate(['/reservations', reservation.id, 'payment']);
+        this.tick();
+        done();
       },
       error: response => {
-        this.working.set(false);
-        this.errorMessage.set(
-          response.status === 409
-            ? response.error?.message ?? 'Some of those seats were just taken. The map has been refreshed.'
-            : 'The seats could not be held. Try again in a moment.'
-        );
-
-        // A 409 means somebody else got there first: show the truth.
-        if (response.status === 409) {
-          this.selectedIds.set(new Set());
-          this.loadSeatMap();
-        }
+        done();
+        // 409: someone else won the race. SignalR has already turned it orange.
+        this.fail(response, 'That seat could not be reserved.');
       }
     });
   }
 
+  /** Gives the whole basket back. */
   onRelease(): void {
     const current = this.reservation();
-    if (!current || this.working()) return;
-
-    this.working.set(true);
+    if (!current) return;
 
     this.reservationService.cancel(current.id).subscribe({
-      next: () => this.resetToSelection(),
-      error: () => {
-        this.working.set(false);
-        this.errorMessage.set('The seats could not be released.');
-      }
+      next: () => {
+        this.reservation.set(null);
+        this.secondsLeft.set(0);
+        this.errorMessage.set(null);
+      },
+      error: () => this.errorMessage.set('The seats could not be released.')
     });
   }
 
@@ -260,6 +266,16 @@ export class ReservationComponent {
     if (!current) return;
 
     this.router.navigate(['/reservations', current.id, 'payment']);
+  }
+
+  private markBusy(seatId: number, busy: boolean): void {
+    const next = new Set(this.busySeatIds());
+    busy ? next.add(seatId) : next.delete(seatId);
+    this.busySeatIds.set(next);
+  }
+
+  private fail(response: { status: number; error?: { message?: string } }, fallback: string): void {
+    this.errorMessage.set(response.error?.message ?? fallback);
   }
 
   /** Recomputes the remaining time and reacts when it runs out. */
@@ -275,18 +291,10 @@ export class ReservationComponent {
 
     if (remaining <= 0) {
       // The API has already released the seats; send the client back.
+      this.reservation.set(null);
       this.router.navigate(['/events', this.eventId], {
         queryParams: { expired: 1 }
       });
     }
-  }
-
-  private resetToSelection(): void {
-    this.working.set(false);
-    this.reservation.set(null);
-    this.secondsLeft.set(0);
-    this.selectedIds.set(new Set());
-    this.errorMessage.set(null);
-    this.loadSeatMap();
   }
 }

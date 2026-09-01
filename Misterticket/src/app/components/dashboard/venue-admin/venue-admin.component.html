@@ -1,0 +1,134 @@
+<div class="panel-grid">
+  <section class="card">
+    <h2 class="card__title">{{ editingId() === null ? 'New venue' : 'Edit venue' }}</h2>
+
+    <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+      <div class="form__row">
+        <label class="field">
+          <span class="field__label">Name</span>
+          <input class="field__input" type="text" formControlName="name" placeholder="Theatre Royal" />
+          @if (form.controls.name.touched && form.controls.name.invalid) {
+          <span class="field__error">A name is required.</span>
+          }
+        </label>
+
+        <label class="field">
+          <span class="field__label">City</span>
+          <input class="field__input" type="text" formControlName="city" placeholder="Gent" />
+        </label>
+      </div>
+
+      @if (editingId() !== null) {
+      <p class="field__hint">
+        The seat layout cannot be changed here: existing events depend on it.
+        Delete the venue and recreate it if the room really changed.
+      </p>
+      } @else {
+      <div class="blocks" formArrayName="blocks">
+        <div class="blocks__head">
+          <span class="field__label">Seat blocks</span>
+          <button class="link-button link-button--inline" type="button" (click)="onSuggestRows()">
+            Auto-letter rows
+          </button>
+        </div>
+
+        @for (block of blocks.controls; track $index; let i = $index) {
+        <div class="block" [formGroupName]="i">
+          <label class="block__field">
+            <span class="field__label">Zone</span>
+            <select class="field__input" formControlName="pricingZoneId">
+              <option [value]="0" disabled>Pick a zone</option>
+              @for (zone of zones(); track zone.id) {
+              <option [value]="zone.id">{{ zone.name }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="block__field block__field--tiny">
+            <span class="field__label">Row</span>
+            <input class="field__input" type="text" maxlength="1" formControlName="firstRow" />
+          </label>
+
+          <label class="block__field block__field--tiny">
+            <span class="field__label">Rows</span>
+            <input class="field__input" type="number" min="1" max="26" formControlName="rowCount" />
+          </label>
+
+          <label class="block__field block__field--tiny">
+            <span class="field__label">Per row</span>
+            <input class="field__input" type="number" min="1" max="100" formControlName="seatsPerRow" />
+          </label>
+
+          <button class="block__remove"
+                  type="button"
+                  title="Remove this block"
+                  [disabled]="blocks.length === 1"
+                  (click)="onRemoveBlock(i)">
+            ×
+          </button>
+        </div>
+        }
+
+        <button class="link-button link-button--inline" type="button" (click)="onAddBlock()">
+          + Add another block
+        </button>
+      </div>
+
+      <p class="capacity">
+        <span>Capacity</span>
+        <span class="capacity__value">{{ plannedCapacity() }} seats</span>
+      </p>
+
+      @if (zones().length === 0) {
+      <p class="form__error">Create at least one pricing zone before adding a venue.</p>
+      }
+      }
+
+      @if (layoutProblem(); as problem) {
+      <p class="form__error">{{ problem }}</p>
+      }
+
+      @if (errorMessage()) {
+      <p class="form__error">{{ errorMessage() }}</p>
+      }
+
+      <div class="form__actions">
+        <button class="cta" type="submit" [disabled]="working() || !canSubmit()">
+          {{ editingId() === null ? 'Create venue' : 'Save changes' }}
+        </button>
+        @if (editingId() !== null) {
+        <button class="link-button" type="button" (click)="onCancelEdit()">Cancel</button>
+        }
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2 class="card__title">Venues</h2>
+
+    @if (venues().length === 0) {
+    <p class="card__empty">No venue yet.</p>
+    } @else {
+    <table class="table">
+      <thead>
+        <tr><th>Venue</th><th>Seats</th><th></th></tr>
+      </thead>
+      <tbody>
+        @for (venue of venues(); track venue.id) {
+        <tr>
+          <td>
+            {{ venue.name }}
+            @if (venue.city) { <span class="table__sub">{{ venue.city }}</span> }
+          </td>
+          <td class="table__num">{{ venue.seatCount }}</td>
+          <td class="table__actions">
+            <button type="button" (click)="onEdit(venue)">Edit</button>
+            <button type="button" class="danger" (click)="onDelete(venue)">Delete</button>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+    }
+  </section>
+</div>

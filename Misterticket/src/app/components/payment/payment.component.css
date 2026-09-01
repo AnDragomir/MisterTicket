@@ -1,35 +1,13 @@
-.payment {
-  max-width: 45rem;
-  padding: clamp(3rem, 8vw, 5rem) 0 6rem;
-}
-
-.eyebrow {
+.notice {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--brass);
-  margin: 0 0 1rem;
-}
-
-.payment__title {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: clamp(2.25rem, 7vw, 3.5rem);
-  line-height: 1;
-  letter-spacing: -0.02em;
-  margin: 0 0 1.5rem;
-}
-
-.payment__text {
+  font-size: 0.85rem;
   color: var(--cream-dim);
-  font-size: 1.05rem;
-  max-width: 42ch;
+  padding: 4rem 0;
 }
 
 .back {
   display: inline-block;
-  margin-top: 2.5rem;
+  margin: 2.5rem 0 2rem;
   font-family: var(--font-mono);
   font-size: 0.72rem;
   letter-spacing: 0.14em;
@@ -42,3 +20,202 @@
   .back:focus-visible {
     color: var(--brass);
   }
+
+.pay-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 17rem;
+  gap: 2.5rem;
+  align-items: start;
+  padding-bottom: 6rem;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin: 0 0 1rem;
+}
+
+.pay__title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin: 0 0 2rem;
+}
+
+/* -------------------------------- methods -------------------------------- */
+
+.methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+}
+
+.method {
+  padding: 0.7rem 1.2rem;
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cream-dim);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+  .method:hover {
+    color: var(--cream);
+  }
+
+.method--active {
+  border-color: var(--brass);
+  color: var(--brass);
+}
+
+.method__hint {
+  margin: 0 0 1.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--cream-faint);
+}
+
+.field__input--mono {
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+}
+
+/* A decorative QR: it encodes nothing, and says so. */
+.fake-qr {
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  background: var(--plum-raised);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+}
+
+.fake-qr__grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.fake-qr__cell {
+  width: 18px;
+  height: 18px;
+  border-radius: 2px;
+  background: var(--rule);
+}
+
+.fake-qr__cell--on {
+  background: var(--cream);
+}
+
+/* --------------------------------- recap --------------------------------- */
+
+.recap {
+  position: sticky;
+  top: 2rem;
+  padding: 1.5rem;
+  background: var(--plum-raised);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+}
+
+.recap__eyebrow {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cream-faint);
+}
+
+.recap__timer {
+  margin: 0 0 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--brass);
+}
+
+.recap__timer--urgent {
+  color: var(--curtain);
+}
+
+.recap__event {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+}
+
+.recap__meta {
+  margin: 0.35rem 0 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cream-faint);
+}
+
+.recap__seats {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--cream-dim);
+}
+
+  .recap__seats li {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+.recap__price {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--cream);
+}
+
+.total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cream-faint);
+}
+
+.total__amount {
+  font-size: 1.3rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--brass);
+}
+
+@media (max-width: 52rem) {
+  .pay-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .recap {
+    position: static;
+    order: -1;
+  }
+}

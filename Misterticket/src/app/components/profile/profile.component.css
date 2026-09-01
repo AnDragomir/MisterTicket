@@ -23,7 +23,7 @@
 
 .facts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   gap: 1.5rem;
   margin: 2.5rem 0 0;
   padding: 1.75rem 0;
@@ -50,35 +50,180 @@
   font-family: var(--font-display);
   font-weight: 500;
   font-size: 1.5rem;
-  margin: 3rem 0 1rem;
+  margin: 3rem 0 1.25rem;
 }
 
-.placeholder {
+.res__empty {
   margin: 0;
   color: var(--cream-dim);
   font-size: 0.95rem;
 }
 
-  .placeholder a {
+  .res__empty a {
     color: var(--brass);
   }
 
-.link-button {
-  margin-top: 3rem;
+.res__success {
+  margin: 1.5rem 0 0;
+  padding: 0.85rem 1rem;
+  border-left: 2px solid var(--seat-free);
+  background: var(--plum-raised);
+  font-size: 0.9rem;
+  color: var(--cream-dim);
+}
+
+.res__error {
+  margin: 1.5rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--curtain);
+}
+
+/* --------------------------- reservation rows --------------------------- */
+
+.res-list {
+  list-style: none;
+  margin: 0;
   padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.res-list--muted {
+  opacity: 0.6;
+  margin-top: 1rem;
+}
+
+.res {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.15rem 1.35rem;
+  background: var(--plum-raised);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+}
+
+/* A live hold: brass edge, because the clock is running. */
+.res--pending {
+  border-left: 2px solid var(--brass);
+}
+
+.res__event {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+
+.res__meta {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cream-faint);
+}
+
+.res__seats {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--cream-dim);
+}
+
+.res__side {
+  text-align: right;
+}
+
+.res__timer {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  color: var(--brass);
+}
+
+.res__timer--urgent {
+  color: var(--curtain);
+}
+
+.res__amount {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--cream);
+}
+
+.res__badge {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream-faint);
+}
+
+.res__badge--paid {
+  color: var(--seat-free);
+}
+
+.res__actions {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: stretch;
+}
+
+.cta--small {
+  margin: 0;
+  padding: 0.55rem 1.35rem;
+  font-size: 0.68rem;
+}
+
+.link-button {
+  padding: 0.4rem 0;
   background: none;
   border: none;
-  border-bottom: 1px solid var(--rule);
   font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--cream-faint);
   cursor: pointer;
 }
 
-  .link-button:hover,
-  .link-button:focus-visible {
+  .link-button:hover {
     color: var(--curtain);
-    border-bottom-color: var(--curtain);
   }
+
+.link-button--inline {
+  display: block;
+  margin-top: 1.5rem;
+  text-align: left;
+  color: var(--cream-dim);
+}
+
+  .link-button--inline:hover {
+    color: var(--brass);
+  }
+
+/* Sign out sits apart from the lists. */
+.profile > .link-button:last-child {
+  margin-top: 3rem;
+  border-top: 1px solid var(--rule);
+  width: 100%;
+  text-align: left;
+  padding-top: 1.25rem;
+}
+
+@media (max-width: 40rem) {
+  .res {
+    grid-template-columns: 1fr auto;
+  }
+
+  .res__actions {
+    grid-column: 1 / -1;
+    grid-auto-flow: column;
+    justify-content: start;
+    gap: 1rem;
+  }
+}

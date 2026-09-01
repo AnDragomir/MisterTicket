@@ -12,13 +12,115 @@
       <dt>Account type</dt>
       <dd>{{ account.role }}</dd>
     </div>
+    <div class="fact">
+      <dt>Tickets</dt>
+      <dd>{{ paid().length }}</dd>
+    </div>
   </dl>
 
-  <h2 class="section__title">Your reservations</h2>
-  <p class="placeholder">
-    Your bookings will appear here once the reservation flow is built.
-    <a routerLink="/">Browse the programme</a> in the meantime.
+  @if (justPaid()) {
+  <p class="res__success">Payment received. Your ticket is ready below.</p>
+  }
+
+  @if (errorMessage()) {
+  <p class="res__error">{{ errorMessage() }}</p>
+  }
+
+  <!-- ------------------------- waiting for payment ------------------------ -->
+  @if (pending().length > 0) {
+  <h2 class="section__title">Waiting for payment</h2>
+
+  <ul class="res-list">
+    @for (reservation of pending(); track reservation.id) {
+    <li class="res res--pending">
+      <div class="res__main">
+        <p class="res__event">{{ reservation.eventName }}</p>
+        <p class="res__meta">
+          {{ reservation.venueName }} · {{ reservation.startsAt | date: 'd MMM yyyy, HH:mm' }}
+        </p>
+        <p class="res__seats">{{ seatLabels(reservation) }}</p>
+      </div>
+
+      <div class="res__side">
+        <p class="res__timer" [class.res__timer--urgent]="isUrgent(reservation)">
+          {{ countdown(reservation) }}
+        </p>
+        <p class="res__amount">€ {{ reservation.totalAmount | number: '1.2-2' }}</p>
+      </div>
+
+      <div class="res__actions">
+        <button class="cta cta--small" type="button" (click)="onPay(reservation)">Pay</button>
+        <button class="link-button" type="button" (click)="onCancel(reservation)">Cancel</button>
+      </div>
+    </li>
+    }
+  </ul>
+  }
+
+  <!-- ------------------------------- tickets ------------------------------ -->
+  <h2 class="section__title">Your tickets</h2>
+
+  @if (loading()) {
+  <p class="res__empty">Loading your reservations…</p>
+  } @else if (paid().length === 0) {
+  <p class="res__empty">
+    No ticket yet. <a routerLink="/">Browse the programme</a> to book a seat.
   </p>
+  } @else {
+  <ul class="res-list">
+    @for (reservation of paid(); track reservation.id) {
+    <li class="res">
+      <div class="res__main">
+        <p class="res__event">{{ reservation.eventName }}</p>
+        <p class="res__meta">
+          {{ reservation.venueName }} · {{ reservation.startsAt | date: 'd MMM yyyy, HH:mm' }}
+        </p>
+        <p class="res__seats">{{ seatLabels(reservation) }}</p>
+      </div>
+
+      <div class="res__side">
+        <p class="res__badge res__badge--paid">Paid</p>
+        <p class="res__amount">€ {{ reservation.totalAmount | number: '1.2-2' }}</p>
+      </div>
+
+      <div class="res__actions">
+        <button class="cta cta--small"
+                type="button"
+                [disabled]="downloadingId() === reservation.id"
+                (click)="onDownloadTicket(reservation)">
+          {{ downloadingId() === reservation.id ? 'Preparing…' : 'Ticket PDF' }}
+        </button>
+      </div>
+    </li>
+    }
+  </ul>
+  }
+
+  <!-- ------------------------------ cancelled ----------------------------- -->
+  @if (cancelled().length > 0) {
+  <button class="link-button link-button--inline" type="button" (click)="onToggleCancelled()">
+    {{ showCancelled() ? 'Hide' : 'Show' }} cancelled ({{ cancelled().length }})
+  </button>
+
+  @if (showCancelled()) {
+  <ul class="res-list res-list--muted">
+    @for (reservation of cancelled(); track reservation.id) {
+    <li class="res">
+      <div class="res__main">
+        <p class="res__event">{{ reservation.eventName }}</p>
+        <p class="res__meta">
+          {{ reservation.createdAt | date: 'd MMM yyyy, HH:mm' }}
+        </p>
+      </div>
+
+      <div class="res__side">
+        <p class="res__badge">Released</p>
+      </div>
+    </li>
+    }
+  </ul>
+  }
+  }
 
   <button class="link-button" type="button" (click)="onLogout()">Sign out</button>
 </section>

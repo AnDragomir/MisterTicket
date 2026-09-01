@@ -1,9 +1,127 @@
-<section class="payment">
-  <p class="eyebrow">Payment</p>
-  <h1 class="payment__title">Almost yours</h1>
-  <p class="payment__text">
-    The payment form for reservation #{{ reservationId }} goes here: pick a
-    method, confirm, and the seats become yours.
-  </p>
-  <a class="back" routerLink="/profile">← Back to your account</a>
-</section>
+@if (loadFailed()) {
+<p class="notice">This reservation could not be loaded.</p>
+} @else if (reservation(); as booking) {
+
+<a class="back" [routerLink]="['/events', booking.eventId, 'reserve']">← Back to the seat map</a>
+
+<div class="pay-layout">
+  <!-- ------------------------------ the form ------------------------------ -->
+  <section>
+    <p class="eyebrow">Payment</p>
+    <h1 class="pay__title">Almost yours</h1>
+
+    <div class="methods">
+      @for (method of methods; track method.id) {
+      <button class="method"
+              type="button"
+              [class.method--active]="selectedMethod().id === method.id"
+              (click)="onSelectMethod(method)">
+        {{ method.label }}
+      </button>
+      }
+    </div>
+
+    <p class="method__hint">{{ selectedMethod().hint }}</p>
+
+    @if (selectedMethod().needsCard) {
+    <form class="form" [formGroup]="form" (ngSubmit)="onPay()">
+      <label class="field">
+        <span class="field__label">Name on the card</span>
+        <input class="field__input" type="text" formControlName="holder" autocomplete="cc-name" />
+        @if (form.controls.holder.touched && form.controls.holder.invalid) {
+        <span class="field__error">Enter the name printed on the card.</span>
+        }
+      </label>
+
+      <label class="field">
+        <span class="field__label">Card number</span>
+        <input class="field__input field__input--mono"
+               type="text"
+               inputmode="numeric"
+               placeholder="4242 4242 4242 4242"
+               formControlName="cardNumber"
+               (input)="onCardNumberInput($event)" />
+        @if (form.controls.cardNumber.touched && form.controls.cardNumber.errors; as errors) {
+        <span class="field__error">{{ errors['cardNumber'] }}</span>
+        }
+      </label>
+
+      <div class="form__row">
+        <label class="field">
+          <span class="field__label">Expiry</span>
+          <input class="field__input field__input--mono"
+                 type="text"
+                 inputmode="numeric"
+                 placeholder="09/28"
+                 formControlName="expiry"
+                 (input)="onExpiryInput($event)" />
+          @if (form.controls.expiry.touched && form.controls.expiry.errors; as errors) {
+          <span class="field__error">{{ errors['expiry'] }}</span>
+          }
+        </label>
+
+        <label class="field">
+          <span class="field__label">CVC</span>
+          <input class="field__input field__input--mono"
+                 type="text"
+                 inputmode="numeric"
+                 maxlength="4"
+                 placeholder="123"
+                 formControlName="cvc" />
+          @if (form.controls.cvc.touched && form.controls.cvc.invalid) {
+          <span class="field__error">Three or four digits.</span>
+          }
+        </label>
+      </div>
+    </form>
+    } @else {
+    <div class="fake-qr" aria-hidden="true">
+      <div class="fake-qr__grid">
+        @for (cell of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25]; track cell) {
+        <span class="fake-qr__cell" [class.fake-qr__cell--on]="cell % 3 !== 0"></span>
+        }
+      </div>
+    </div>
+    <p class="method__hint">Nothing to fill in: press pay to simulate the scan.</p>
+    }
+
+    @if (errorMessage()) {
+    <p class="form__error">{{ errorMessage() }}</p>
+    }
+
+    <button class="cta" type="button" [disabled]="!canPay()" (click)="onPay()">
+      {{ paying() ? 'Paying…' : 'Pay € ' + (booking.totalAmount | number: '1.2-2') }}
+    </button>
+  </section>
+
+  <!-- ------------------------------ the recap ----------------------------- -->
+  <aside class="recap">
+    @if (booking.status === 'Pending') {
+    <p class="recap__eyebrow">Time left</p>
+    <p class="recap__timer" [class.recap__timer--urgent]="secondsLeft() < 120">{{ countdown() }}</p>
+    }
+
+    <p class="recap__event">{{ booking.eventName }}</p>
+    <p class="recap__meta">
+      {{ booking.venueName }} · {{ booking.startsAt | date: 'd MMM yyyy, HH:mm' }}
+    </p>
+
+    <ul class="recap__seats">
+      @for (seat of booking.seats; track seat.eventSeatId) {
+      <li>
+        <span>{{ seat.rowLabel }}{{ seat.number }} · {{ seat.pricingZoneName }}</span>
+        <span class="recap__price">€ {{ seat.price | number: '1.2-2' }}</span>
+      </li>
+      }
+    </ul>
+
+    <p class="total">
+      <span>Total</span>
+      <span class="total__amount">€ {{ booking.totalAmount | number: '1.2-2' }}</span>
+    </p>
+  </aside>
+</div>
+
+} @else {
+<p class="notice">Loading your reservation…</p>
+}

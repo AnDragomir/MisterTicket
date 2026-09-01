@@ -1,0 +1,77 @@
+<div class="panel-grid">
+  <section class="card">
+    <h2 class="card__title">{{ editingId() === null ? 'New zone' : 'Edit zone' }}</h2>
+
+    <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+      <label class="field">
+        <span class="field__label">Name</span>
+        <input class="field__input" type="text" formControlName="name" placeholder="VIP" />
+        @if (form.controls.name.touched && form.controls.name.invalid) {
+        <span class="field__error">A name is required.</span>
+        }
+      </label>
+
+      <div class="form__row">
+        <label class="field">
+          <span class="field__label">Colour</span>
+          <input class="field__input field__input--color" type="color" formControlName="colorHex" />
+        </label>
+
+        <label class="field">
+          <span class="field__label">Base price (€)</span>
+          <input class="field__input" type="number" min="0" step="0.5" formControlName="basePrice" />
+          @if (form.controls.basePrice.touched && form.controls.basePrice.invalid) {
+          <span class="field__error">Enter a price of 0 or more.</span>
+          }
+        </label>
+      </div>
+
+      <p class="field__hint">
+        The base price seeds each seat's price when an event is created. Changing it
+        later does not touch events that already exist.
+      </p>
+
+      @if (errorMessage()) {
+      <p class="form__error">{{ errorMessage() }}</p>
+      }
+
+      <div class="form__actions">
+        <button class="cta" type="submit" [disabled]="working()">
+          {{ editingId() === null ? 'Create zone' : 'Save changes' }}
+        </button>
+        @if (editingId() !== null) {
+        <button class="link-button" type="button" (click)="onCancelEdit()">Cancel</button>
+        }
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2 class="card__title">Zone catalogue</h2>
+
+    @if (zones().length === 0) {
+    <p class="card__empty">No zone yet. Create one before adding seats to a venue.</p>
+    } @else {
+    <table class="table">
+      <thead>
+        <tr><th>Zone</th><th>Base price</th><th></th></tr>
+      </thead>
+      <tbody>
+        @for (zone of zones(); track zone.id) {
+        <tr>
+          <td>
+            <span class="swatch" [style.background]="zone.colorHex"></span>
+            {{ zone.name }}
+          </td>
+          <td class="table__num">€ {{ zone.basePrice | number: '1.2-2' }}</td>
+          <td class="table__actions">
+            <button type="button" (click)="onEdit(zone)">Edit</button>
+            <button type="button" class="danger" (click)="onDelete(zone)">Delete</button>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+    }
+  </section>
+</div>

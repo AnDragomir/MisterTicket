@@ -75,3 +75,9 @@ export interface ZoneTally {
   count: number;
   subtotal: number;
 }
+
+/** Mirrors PaymentCreateDTO: no real credential ever leaves the browser. */
+export interface PaymentRequest {
+  method: string;
+  cardLastFour: string | null;
+}

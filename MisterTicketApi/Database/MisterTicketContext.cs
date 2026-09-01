@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MisterTicketApi.Entities;
 
 namespace MisterTicketApi.Database;
@@ -16,12 +17,36 @@ public class MisterTicketContext : DbContext
     public DbSet<Reservation> Reservations { get; set; }
     public DbSet<Payment> Payments { get; set; }
 
+
+
     // Lengths, required columns and decimal precision are declared with data
     // annotations on the entities. Only what annotations cannot express is
     // configured here: relationships, delete behaviours and unique indexes.
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // SQL Server does not store the DateTimeKind, so values come back as
+        // Unspecified and serialise without the "Z". Mark them UTC on read so the
+        // browser parses them as UTC instead of local time.
+        var utcConverter = new ValueConverter<DateTime, DateTime>(
+            write => write,
+            read => DateTime.SpecifyKind(read, DateTimeKind.Utc));
+
+        var nullableUtcConverter = new ValueConverter<DateTime?, DateTime?>(
+            write => write,
+            read => read.HasValue ? DateTime.SpecifyKind(read.Value, DateTimeKind.Utc) : read);
+
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTime))
+                    property.SetValueConverter(utcConverter);
+                else if (property.ClrType == typeof(DateTime?))
+                    property.SetValueConverter(nullableUtcConverter);
+            }
+        }
 
         // ---------- User ----------
         modelBuilder.Entity<User>(entity =>
